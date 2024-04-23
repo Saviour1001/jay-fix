@@ -3,6 +3,9 @@ import {
   getAssociatedTokenAddress,
 } from "@solana/spl-token";
 import { Transaction, PublicKey, Connection, Keypair } from "@solana/web3.js";
+import bs58 from "bs58";
+
+import { privateKey } from "./consts";
 
 // -----------constants----------------
 const mainnetConnection = new Connection(
@@ -36,10 +39,14 @@ const tokenDecimals = {
 
 // ------ assign stuff to use ------
 
+const anotherWallet = bs58.decode(privateKey);
+const wallet = Keypair.fromSecretKey(anotherWallet);
+
+console.log("wallet ", wallet.publicKey.toBase58());
 const connection = devnetConnection;
 
-const tokenToRemove = token.usdc;
-const tokenDecimalsToRemove = tokenDecimals.usdc;
+const tokenToRemove = token.usdc_devnet;
+const tokenDecimalsToRemove = tokenDecimals.usdc_devnet;
 const receivingWallet = "BGfybQ2uFGPmCscCPAgJtBFXDWc5GNqzymSq3AAo6Nvi";
 
 const secretKey = [
@@ -61,6 +68,8 @@ const fromAta = await getAssociatedTokenAddress(
   myKeypair.publicKey
 );
 
+console.log("my keypair ", myKeypair.publicKey.toBase58());
+
 console.log("from Ata ", fromAta.toBase58());
 
 // find the balance of the token
@@ -73,26 +82,32 @@ console.log("to Ata ", toAta.toBase58());
 
 let latestBlockhash = await connection.getLatestBlockhash();
 
-let tx = new Transaction().add(
-  createTransferCheckedInstruction(
-    fromAta, // from (should be a token account)
-    tokenToRemoveAddress, // mint
-    toAta, // to (should be a token account)
-    myKeypair.publicKey, // from's owner
-    balance.value.amount as unknown as bigint, // amount, if your deciamls is 8, send 10^8 for 1 token
-    tokenDecimalsToRemove // decimals
-  )
-);
+for (let i = 0; i >= 0; i++) {
+  try {
+    let tx = new Transaction().add(
+      createTransferCheckedInstruction(
+        fromAta, // from (should be a token account)
+        tokenToRemoveAddress, // mint
+        toAta, // to (should be a token account)
+        myKeypair.publicKey, // from's owner
+        balance.value.amount as unknown as bigint, // amount, if your deciamls is 8, send 10^8 for 1 token
+        tokenDecimalsToRemove // decimals
+      )
+    );
 
-tx.recentBlockhash = latestBlockhash.blockhash;
+    tx.recentBlockhash = latestBlockhash.blockhash;
 
-tx.feePayer = myKeypair.publicKey;
+    tx.feePayer = myKeypair.publicKey;
 
-const signature = await connection.sendTransaction(tx, [myKeypair]);
+    const signature = await connection.sendTransaction(tx, [myKeypair]);
 
-await connection.confirmTransaction(
-  { signature, ...latestBlockhash },
-  "confirmed"
-);
+    await connection.confirmTransaction(
+      { signature, ...latestBlockhash },
+      "confirmed"
+    );
 
-console.log("signature ", signature);
+    console.log("signature ", signature);
+  } catch (e) {
+    continue;
+  }
+}
