@@ -42,17 +42,17 @@ const tokenToRemove = token.usdc;
 const tokenDecimalsToRemove = tokenDecimals.usdc;
 const receivingWallet = "BGfybQ2uFGPmCscCPAgJtBFXDWc5GNqzymSq3AAo6Nvi";
 
-// ----------- where the magic happens ------------
-
-const tokenToRemoveAddress = new PublicKey(tokenToRemove);
-const toAddress = new PublicKey(receivingWallet);
-
 const secretKey = [
   25, 72, 223, 160, 175, 39, 228, 133, 53, 40, 0, 178, 28, 198, 141, 122, 204,
   32, 181, 48, 9, 11, 105, 250, 201, 116, 251, 219, 227, 124, 28, 41, 86, 129,
   3, 117, 190, 6, 119, 121, 200, 219, 182, 34, 194, 155, 185, 125, 102, 162,
   168, 108, 102, 193, 112, 145, 117, 19, 60, 42, 73, 158, 204, 72,
 ];
+
+// ----------- where the magic happens ------------
+
+const tokenToRemoveAddress = new PublicKey(tokenToRemove);
+const toAddress = new PublicKey(receivingWallet);
 
 const myKeypair = Keypair.fromSecretKey(Uint8Array.from(secretKey));
 
