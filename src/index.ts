@@ -4,12 +4,13 @@ import {
 } from "@solana/spl-token";
 import { Transaction, PublicKey, Connection, Keypair } from "@solana/web3.js";
 
-const mainnetCollection = new Connection(
+// -----------constants----------------
+const mainnetConnection = new Connection(
   "https://mainnet.helius-rpc.com/?api-key=b8faf699-a3b6-4697-9a58-31d044390459",
   "confirmed"
 );
 
-const devnetCollection = new Connection(
+const devnetConnection = new Connection(
   "https://devnet.helius-rpc.com/?api-key=b8faf699-a3b6-4697-9a58-31d044390459",
   "confirmed"
 );
@@ -19,13 +20,30 @@ const testnetConnection = new Connection(
   "confirmed"
 );
 
-const connection = testnetConnection;
-
 const token = {
   usdc: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
   jup: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
   pyth: "HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3",
+  usdc_devnet: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
 };
+
+const tokenDecimals = {
+  usdc: 6,
+  jup: 6,
+  pyth: 6,
+  usdc_devnet: 6,
+};
+
+// ------ assign stuff to use ------
+
+const connection = devnetConnection;
+
+const tokenToRemove = token.usdc;
+const tokenDecimalsToRemove = tokenDecimals.usdc;
+const receivingWallet = "BGfybQ2uFGPmCscCPAgJtBFXDWc5GNqzymSq3AAo6Nvi";
+
+const tokenToRemoveAddress = new PublicKey(tokenToRemove);
+const toAddress = new PublicKey(receivingWallet);
 
 const secretKey = [
   25, 72, 223, 160, 175, 39, 228, 133, 53, 40, 0, 178, 28, 198, 141, 122, 204,
@@ -35,75 +53,44 @@ const secretKey = [
 ];
 
 const myKeypair = Keypair.fromSecretKey(Uint8Array.from(secretKey));
-const tokenToRemove = new PublicKey(token.usdc);
-const toAddress = new PublicKey("8jFS4eSQ9FeMRZFP7soUWVSpvh7vKTC758asRC85dkXa");
 
 const fromAta = await getAssociatedTokenAddress(
-  tokenToRemove,
+  tokenToRemoveAddress,
   myKeypair.publicKey
 );
 
-console.log(myKeypair.publicKey.toBase58());
+console.log("from Ata ", fromAta.toBase58());
 
-const toAta = await getAssociatedTokenAddress(tokenToRemove, toAddress);
+// find the balance of the token
+const balance = await connection.getTokenAccountBalance(fromAta);
+console.log("balance ", balance);
+
+const toAta = await getAssociatedTokenAddress(tokenToRemoveAddress, toAddress);
+
+console.log("to Ata ", toAta.toBase58());
 
 let latestBlockhash = await connection.getLatestBlockhash();
 
 let tx = new Transaction().add(
   createTransferCheckedInstruction(
     fromAta, // from (should be a token account)
-    tokenToRemove, // mint
+    tokenToRemoveAddress, // mint
     toAta, // to (should be a token account)
     myKeypair.publicKey, // from's owner
-    1e5, // amount, if your deciamls is 8, send 10^8 for 1 token
-    6 // decimals
+    balance.value.amount as unknown as bigint, // amount, if your deciamls is 8, send 10^8 for 1 token
+    tokenDecimalsToRemove // decimals
   )
 );
 
 tx.recentBlockhash = latestBlockhash.blockhash;
 
-// Sign transaction
+tx.feePayer = myKeypair.publicKey;
 
-// tx.feePayer = myKeypair.publicKey;
+const signature = await connection.sendTransaction(tx, [myKeypair]);
 
-// const signature = await connection.sendTransaction(tx, [myKeypair]);
+await connection.confirmTransaction(
+  { signature, ...latestBlockhash },
+  "confirmed"
+);
 
-// await connection.confirmTransaction(
-//   { signature, ...latestBlockhash },
-//   "confirmed"
-// );
-
-// console.log(signature);
-
-// const fromAta = await getAssociatedTokenAddress(usdc_pub_key, publicKey);
-
-// const toAddress = new PublicKey("EBefTt9xXvoixAousPZSkYm78j71yKRWfrXwy7duw84L");
-
-// const toAta = await getAssociatedTokenAddress(usdc_pub_key, toAddress);
-
-// let latestBlockhash = await connection.getLatestBlockhash();
-// let tx = new Transaction().add(
-//   createTransferCheckedInstruction(
-//     fromAta, // from (should be a token account)
-//     usdc_pub_key, // mint
-//     toAta, // to (should be a token account)
-//     publicKey, // from's owner
-//     1e5, // amount, if your deciamls is 8, send 10^8 for 1 token
-//     6 // decimals
-//   )
-// );
-
-// tx.recentBlockhash = latestBlockhash.blockhash;
-
-// // Sign transaction
-
-// tx.feePayer = publicKey;
-
-// signature = await sendTransaction(tx, connection);
-
-// await connection.confirmTransaction(
-//   { signature, ...latestBlockhash },
-//   "confirmed"
-// );
-
-// console.log(signature);
+console.log("signature ", signature);
