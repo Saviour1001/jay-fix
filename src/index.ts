@@ -42,6 +42,8 @@ const tokenToRemove = token.usdc;
 const tokenDecimalsToRemove = tokenDecimals.usdc;
 const receivingWallet = "BGfybQ2uFGPmCscCPAgJtBFXDWc5GNqzymSq3AAo6Nvi";
 
+// ----------- where the magic happens ------------
+
 const tokenToRemoveAddress = new PublicKey(tokenToRemove);
 const toAddress = new PublicKey(receivingWallet);
 
